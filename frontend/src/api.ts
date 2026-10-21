@@ -30,7 +30,10 @@ export interface TransferLine {
   productId: number
   sku: string
   productName: string
+  /** Sent. */
   quantity: number
+  /** Null until received. Anything below `quantity` is the shortfall, e.g. damaged in transit. */
+  receivedQuantity: number | null
 }
 
 export interface Transfer {
@@ -163,6 +166,14 @@ export const createTransfer = (body: CreateTransferRequest, idempotencyKey: stri
 
 export type TransferAction = 'dispatch' | 'receive' | 'cancel'
 
+/** Optional body for receive. Lines left out are received in full. */
+export interface ReceiveTransferRequest {
+  lines: { productId: number; receivedQuantity: number }[]
+}
+
 /** Safe to repeat: the API answers a repeat of a step that already happened with the transfer and moves nothing. */
-export const runTransferAction = (id: number, action: TransferAction) =>
-  request<Transfer>(`/transfers/${id}/${action}`, { method: 'POST' })
+export const runTransferAction = (id: number, action: TransferAction, body?: ReceiveTransferRequest) =>
+  request<Transfer>(`/transfers/${id}/${action}`, {
+    method: 'POST',
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })

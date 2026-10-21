@@ -2,11 +2,14 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using StockTransfer.Api.Data;
 using StockTransfer.Api.Errors;
+using StockTransfer.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddScoped<TransferService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));

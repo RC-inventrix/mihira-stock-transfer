@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Layout and commands
 
-`ASSESSMENT_BRIEF.md` is the source of truth for requirements.
+`ASSESSMENT_BRIEF.md` is the source of truth for requirements. **`PLAN.md` holds the phased plan, the decisions already made and the status of each phase. Read it at the start of a session and update its status table at the end of each phase.**
 
 - `StockTransfer.slnx` (root) contains `backend/StockTransfer.Api` (.NET 10 Web API, controllers, EF Core + Npgsql) and `backend/StockTransfer.Tests` (xUnit, `WebApplicationFactory`, Testcontainers PostgreSQL).
 - `frontend/` is a Vite React + TypeScript app. Vite proxies `/api/*` to the API at `http://localhost:5131`, with the `/api` prefix stripped, so the API routes have no prefix.

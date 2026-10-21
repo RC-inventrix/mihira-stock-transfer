@@ -30,11 +30,12 @@ To check that the tests can fail, I broke the code on purpose twice:
 - **Quantities are whole units** (integers).
 - **A product appears at most once per transfer.** Two lines for the same product are rejected rather than merged, so the request matches what the user typed.
 - **Every branch has a stock row for every product**, with zero where there is none. Receiving into a branch that has never held a product is then a plain increment.
-- **Creating a request does not check stock.** Stock only moves on dispatch, and the sender's stock can change before then, so the stock check is made at dispatch. The UI shows available stock while building the request.
+- **Creating a request does not check stock.** Stock only moves on dispatch, and the sender's stock can change before then, so the stock check is made at dispatch. The UI shows the available stock next to each line while building the request, and warns (but still allows it) when a quantity is above it.
 - **Repeating a step that already happened succeeds and changes nothing.** A second dispatch (or a dispatch of a transfer that has since been received), a second receive, or a second cancel returns 200 with the transfer as it is. Double-clicks and retries therefore look like success to the user, and stock moves only once. A step from the wrong status, such as receiving a Requested transfer or cancelling a Dispatched one, returns 409 with the reason.
 - **A dispatch is all or nothing.** If any line is short, nothing is dispatched, and the error lists every short line with what is needed and what is available.
 - **Creating a transfer is made idempotent by an optional `Idempotency-Key` header.** A repeat with the same key returns the original transfer (200) and does not create another. The body of the repeat is not compared with the original.
 - **`GET /transfers?branchId=` matches transfers sent from or to that branch.**
+- **The UI does not rely on disabling buttons for safety.** It disables an action while its request is in flight, which stops most double-clicks, but the API's guarded updates are what make a repeat move stock only once.
 - **Errors are ProblemDetails** (`application/problem+json`). `detail` is a sentence the UI can show as-is, and `messages` lists each problem separately.
 
 ## Trade-offs

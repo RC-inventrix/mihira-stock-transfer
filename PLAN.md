@@ -12,8 +12,8 @@ The working plan for the Mihira Stores stock-transfer assessment. `ASSESSMENT_BR
 | 1 | Domain model, DbContext with constraints, seed data, migration | Done | `5c191be` |
 | 2 | Business rules and API endpoints | Done | `35024f6`, `4c5e358` |
 | 3 | Automated tests against real PostgreSQL | Done | `962a665` |
-| 4 | React screen | **Next** | |
-| 5 | Optional stretch: receive a smaller quantity | Decide after Phase 4 | |
+| 4 | React screen | Done | `688539f`, `1c96978`, `6677852` |
+| 5 | Optional stretch: receive a smaller quantity | **Next**: about 1h 05m of budget was left after Phase 4, above the 40-minute bar | |
 | 6 | Finish README and AI_USAGE, final run-through | To do | |
 
 ## Time budget (3 hours in total)
@@ -21,7 +21,7 @@ The working plan for the Mihira Stores stock-transfer assessment. `ASSESSMENT_BR
 | | Planned | Actual |
 |---|---|---|
 | Phases 0 to 3, including reading the brief and planning | ~1h 45m | ~1h 40m (20:38 to 22:18) |
-| Phase 4: UI | ~45m | |
+| Phase 4: UI | ~45m | ~15m (22:18 to 22:31) |
 | Phase 6: docs and final check | ~20m | |
 | Phase 5: stretch, only if time is left | ~30m | |
 
@@ -57,7 +57,7 @@ From "How we review it" in the brief:
 - **Tests:** `WebApplicationFactory` with a Testcontainers PostgreSQL. There is one container per run, and the data is reset to the seed before each test.
 - **Assumptions:** the assumptions are listed in `README.md`. Add new ones there as they are made.
 
-## Phase 4: React screen (next)
+## Phase 4: React screen (done)
 
 The brief asks for one screen. It does not need to look polished, but it must work and show errors clearly.
 
@@ -87,6 +87,12 @@ The brief asks for one screen. It does not need to look polished, but it must wo
 1. API client and types.
 2. New transfer form with available stock.
 3. Transfer list with filters and actions.
+
+**As built (differences from the plan above)**
+- There is no products endpoint, so the product list comes from the from branch's stock (every branch has a row for every product).
+- A new line starts with no product chosen; Create is disabled until every line has one. A blank quantity is sent as 0, so the API's "greater than zero" message reports it.
+- Added a **stock levels table** (every product at every branch) under the list. It was not in the plan, but it makes "stock moved once" visible on screen.
+- With several problems, the error box shows the API's `title` with the `messages` as a list; with one, it shows `detail`.
 
 **Done when**
 - `npm run build` and `npm run lint` pass.

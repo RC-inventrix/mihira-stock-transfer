@@ -13,8 +13,8 @@ The working plan for the Mihira Stores stock-transfer assessment. `ASSESSMENT_BR
 | 2 | Business rules and API endpoints | Done | `35024f6`, `4c5e358` |
 | 3 | Automated tests against real PostgreSQL | Done | `962a665` |
 | 4 | React screen | Done | `688539f`, `1c96978`, `6677852` |
-| 5 | Optional stretch: receive a smaller quantity | **Next**: about 1h 05m of budget was left after Phase 4, above the 40-minute bar | |
-| 6 | Finish README and AI_USAGE, final run-through | To do | |
+| 5 | Optional stretch: receive a smaller quantity | Done | `8b966d8`, `de3e74a`, `ddec680` |
+| 6 | Finish README and AI_USAGE, final run-through | **Next** | |
 
 ## Time budget (3 hours in total)
 
@@ -23,7 +23,7 @@ The working plan for the Mihira Stores stock-transfer assessment. `ASSESSMENT_BR
 | Phases 0 to 3, including reading the brief and planning | ~1h 45m | ~1h 40m (20:38 to 22:18) |
 | Phase 4: UI | ~45m | ~15m (22:18 to 22:31) |
 | Phase 6: docs and final check | ~20m | |
-| Phase 5: stretch, only if time is left | ~30m | |
+| Phase 5: stretch, only if time is left | ~30m | ~10m (22:31 to 22:41) |
 
 About 1h 20m of the budget is left. Phases 4 and 6 fit inside it, and Phase 5 probably does not. If it does not, it goes in the README under "What I would do with another day".
 
@@ -36,7 +36,7 @@ From "How we review it" in the brief:
 | Runs by following the README | Phase 6: fresh run-through on a clean database |
 | Stock rules hold, including double dispatch | Phase 2 (`TransferService`), proven in Phase 3 (`ConcurrencyTests`, `TransferWorkflowTests`) |
 | Code is clear and sensibly structured for its size | One service holds the rules, with thin controllers and a single error handler |
-| Tests check things that matter | 26 integration tests. The deliberate-break checks are written up in the README |
+| Tests check things that matter | 30 integration tests (26 + 4 for receiving a smaller quantity). The deliberate-break checks are written up in the README |
 | README and AI notes are clear and honest | Kept up to date every phase. The candidate writes their own section of AI_USAGE |
 
 ## Decisions already made (do not reopen)
@@ -99,7 +99,7 @@ The brief asks for one screen. It does not need to look polished, but it must wo
 - In a browser, with the API and database running: create a transfer, see the stock, dispatch, receive, cancel; trigger an over-stock dispatch and see its message; double-click Dispatch and see stock move once.
 - Add a row to the AI_USAGE working log and update this table.
 
-## Phase 5: optional stretch, receive a smaller quantity
+## Phase 5: optional stretch, receive a smaller quantity (done)
 
 Do this only if at least 40 minutes are left after Phase 4. If not, list it under "What I would do with another day".
 
@@ -108,6 +108,13 @@ Do this only if at least 40 minutes are left after Phase 4. If not, list it unde
 - The receiver's stock increases by the received quantity. The sender has already lost the full quantity at dispatch.
 - Tests: a smaller receive adds only what was received and records the difference; receiving more than was sent is rejected.
 - UI: quantity inputs in the Receive action. The list shows any shortfall.
+
+**As built (additions to the plan above)**
+- A CHECK constraint backs up the range rule: `ReceivedQuantity` is null, or between 0 and `Quantity`.
+- The migration backfills `ReceivedQuantity = Quantity` on transfers that were already Received, since those always took in the full amount.
+- Invalid received quantities are rejected inside the receive transaction, so the status change rolls back with them and the transfer stays Dispatched.
+- A repeated receive with different figures returns 200 and changes nothing, like any other repeat.
+- Done: 30 tests pass; breaking the stock update (adding the sent quantity instead of the received one) failed 2 of the 4 new tests; the receive form was checked in the browser (7 checks), and the Phase 4 browser checks still pass.
 
 ## Phase 6: finish the docs and do a final check
 
@@ -127,7 +134,7 @@ Do this only if at least 40 minutes are left after Phase 4. If not, list it unde
 
 ## Ideas for "another day" (collect as they come up)
 
-- Receiving a smaller quantity (Phase 5), if it was skipped.
+- A reason per shortfall (damaged, missing, wrong item), and a way to follow up on it.
 - Who did what: recording the user on each step once login exists.
 - Paging for the transfer list.
 - Reserving stock at request time, so a request cannot be made against stock that is already promised.

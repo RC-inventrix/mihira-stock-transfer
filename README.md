@@ -16,12 +16,14 @@ _TODO: run steps once the API and UI are in place._
 
 - **`TransferWorkflowTests`:** creating moves no stock. Dispatch takes stock from the sender only, and receive adds it to the receiver. An over-stock dispatch returns 409, lists each short line, and rolls back the lines it had already taken. Dispatching or receiving twice moves stock once. Every wrong-status action (for example, receive before dispatch, cancel after dispatch, dispatch after cancel) returns 409 and moves nothing.
 - **`ConcurrencyTests`:** 10 simultaneous dispatches, or receives, of one transfer move stock once. Three transfers competing for the same 3 units: exactly one is dispatched and stock ends at 1, never below zero. 10 simultaneous creates with one idempotency key make one transfer.
+- **`ReceiveTests`:** a short receive adds only what arrived and records it, and lines left out arrive in full. Receive with no body takes in everything. Invalid received quantities (more than sent, negative, a product not on the transfer) are all reported together, and the transfer stays Dispatched. A repeated receive with different figures changes nothing.
 - **`CreateTransferTests`:** each validation rule gives its own message and creates nothing. All problems are reported together. A repeated idempotency key returns the original transfer.
 
-To check that the tests can fail, I broke the code on purpose twice:
+To check that the tests can fail, I broke the code on purpose:
 
 - **Status guard removed** from the update: 9 tests failed.
 - **Status check rewritten as a naive "read the status, then write"** with a 20 ms gap: only the concurrency tests caught it, which is their job. Run on their own, the dispatch and receive tests failed in 3 out of 3 runs (Warehouse rice 400 instead of 490, Kandy 105 instead of 15). In one full-suite run, only the dispatch test caught it. A race test can only catch a race when the timing lines up, so these tests are evidence for the locking, not proof.
+- **Receive adds the sent quantity instead of the received one:** 2 of the 4 `ReceiveTests` failed, the two that receive less than was sent.
 
 ## Assumptions
 
@@ -32,6 +34,7 @@ To check that the tests can fail, I broke the code on purpose twice:
 - **Every branch has a stock row for every product**, with zero where there is none. Receiving into a branch that has never held a product is then a plain increment.
 - **Creating a request does not check stock.** Stock only moves on dispatch, and the sender's stock can change before then, so the stock check is made at dispatch. The UI shows the available stock next to each line while building the request, and warns (but still allows it) when a quantity is above it.
 - **Repeating a step that already happened succeeds and changes nothing.** A second dispatch (or a dispatch of a transfer that has since been received), a second receive, or a second cancel returns 200 with the transfer as it is. Double-clicks and retries therefore look like success to the user, and stock moves only once. A step from the wrong status, such as receiving a Requested transfer or cancelling a Dispatched one, returns 409 with the reason.
+- **The receiver can record that less arrived than was sent** (the optional stretch goal). `POST /transfers/{id}/receive` takes an optional body, `{ "lines": [{ "productId": 1, "receivedQuantity": 8 }] }`. Each received quantity must be from 0 to the quantity sent. Lines left out, or no body at all, are received in full. Only what arrived is added to the receiver. The sender already lost the full quantity at dispatch, so the shortfall stays on record as `quantity - receivedQuantity` on each line, and the screen shows it (for example "received 8, 2 short"). The brief does not say what happens to the missing stock afterwards, so it is only recorded.
 - **A dispatch is all or nothing.** If any line is short, nothing is dispatched, and the error lists every short line with what is needed and what is available.
 - **Creating a transfer is made idempotent by an optional `Idempotency-Key` header.** A repeat with the same key returns the original transfer (200) and does not create another. The body of the repeat is not compared with the original.
 - **`GET /transfers?branchId=` matches transfers sent from or to that branch.**

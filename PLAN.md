@@ -14,7 +14,7 @@ The working plan for the Mihira Stores stock-transfer assessment. `ASSESSMENT_BR
 | 3 | Automated tests against real PostgreSQL | Done | `962a665` |
 | 4 | React screen | Done | `688539f`, `1c96978`, `6677852` |
 | 5 | Optional stretch: receive a smaller quantity | Done | `8b966d8`, `de3e74a`, `ddec680` |
-| 6 | Finish README and AI_USAGE, final run-through | **Next** | |
+| 6 | Finish README and AI_USAGE, final run-through | Done | final commit |
 
 ## Time budget (3 hours in total)
 
@@ -22,7 +22,7 @@ The working plan for the Mihira Stores stock-transfer assessment. `ASSESSMENT_BR
 |---|---|---|
 | Phases 0 to 3, including reading the brief and planning | ~1h 45m | ~1h 40m (20:38 to 22:18) |
 | Phase 4: UI | ~45m | ~15m (22:18 to 22:31) |
-| Phase 6: docs and final check | ~20m | |
+| Phase 6: docs and final check | ~20m | ~8m (22:41 to 22:49) |
 | Phase 5: stretch, only if time is left | ~30m | ~10m (22:31 to 22:41) |
 
 About 1h 20m of the budget is left. Phases 4 and 6 fit inside it, and Phase 5 probably does not. If it does not, it goes in the README under "What I would do with another day".

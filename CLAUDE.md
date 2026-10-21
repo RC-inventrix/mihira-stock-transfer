@@ -17,7 +17,10 @@ cd frontend && npm run dev                        # UI
 dotnet test                                       # all tests (Docker must be running)
 dotnet test --filter "FullyQualifiedName~<TestName>"   # single test
 cd frontend && npm run build && npm run lint      # type-check, build, oxlint
+dotnet ef migrations add <Name> --project backend/StockTransfer.Api -o Data/Migrations   # dotnet-ef is a local tool (dotnet tool restore)
 ```
+
+The API applies migrations on startup (`Database.Migrate()` in `Program.cs`). Seed data (branch and product IDs as constants in `Data/SeedData.cs`) goes in through `HasData`, so changing it requires a new migration. Seeded rows include a stock row for every branch/product pair. On a fresh database, EF logs a "fail" for the missing `__EFMigrationsHistory` table; this is expected.
 
 ## Working conventions
 

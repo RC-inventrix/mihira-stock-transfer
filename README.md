@@ -12,7 +12,12 @@ _TODO: run steps once the API and UI are in place._
 
 ## Assumptions
 
-_TODO_
+- **The warehouse is a location like any branch.** It can send and receive transfers. The brief lists it alongside the branches but gives it no special rules.
+- **The product list is fixed.** The brief asks only for seeded products, so there is no endpoint to add products or branches.
+- **Quantities are whole units** (integers).
+- **A product appears at most once per transfer.** Two lines for the same product are rejected rather than merged, so the request matches what the user typed.
+- **Every branch has a stock row for every product**, with zero where there is none. Receiving into a branch that has never held a product is then a plain increment.
+- _More assumptions about the transfer rules will be added in Phase 2._
 
 ## Trade-offs
 

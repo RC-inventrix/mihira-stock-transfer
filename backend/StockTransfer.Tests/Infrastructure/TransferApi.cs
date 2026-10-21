@@ -41,7 +41,13 @@ public class TransferApi(HttpClient http)
 
     public Task<HttpResponseMessage> DispatchAsync(int id) => http.PostAsync($"transfers/{id}/dispatch", null);
 
-    public Task<HttpResponseMessage> ReceiveAsync(int id) => http.PostAsync($"transfers/{id}/receive", null);
+    /// <summary>With no lines, posts no body, so everything is received in full.</summary>
+    public Task<HttpResponseMessage> ReceiveAsync(int id, params (int ProductId, int ReceivedQuantity)[] lines) =>
+        http.PostAsync($"transfers/{id}/receive", lines.Length == 0
+            ? null
+            : JsonContent.Create(
+                new ReceiveTransferRequest(lines.Select(l => new ReceiveTransferLineRequest(l.ProductId, l.ReceivedQuantity)).ToList()),
+                options: Json));
 
     public Task<HttpResponseMessage> CancelAsync(int id) => http.PostAsync($"transfers/{id}/cancel", null);
 
@@ -49,8 +55,10 @@ public class TransferApi(HttpClient http)
     public static Task<HttpResponseMessage[]> AllAtOnce(int count, Func<Task<HttpResponseMessage>> send) =>
         Task.WhenAll(Enumerable.Range(0, count).Select(_ => Task.Run(send)));
 
-    public async Task<TransferStatus> StatusAsync(int id) =>
-        (await http.GetFromJsonAsync<TransferDto>($"transfers/{id}", Json))!.Status;
+    public async Task<TransferDto> GetAsync(int id) =>
+        (await http.GetFromJsonAsync<TransferDto>($"transfers/{id}", Json))!;
+
+    public async Task<TransferStatus> StatusAsync(int id) => (await GetAsync(id)).Status;
 
     public async Task<IReadOnlyList<TransferDto>> ListAsync() =>
         (await http.GetFromJsonAsync<List<TransferDto>>("transfers", Json))!;

@@ -3,6 +3,7 @@ import { type ApiError, type Branch, getBranches, toApiError } from './api'
 import { ErrorMessage } from './components/ErrorMessage'
 import { NewTransferForm } from './components/NewTransferForm'
 import { StockTable } from './components/StockTable'
+import { TransferList } from './components/TransferList'
 
 export default function App() {
   const [branches, setBranches] = useState<Branch[] | null>(null)
@@ -49,6 +50,11 @@ export default function App() {
           <section>
             <h2>New transfer</h2>
             <NewTransferForm branches={branches} version={version} onCreated={changed} />
+          </section>
+
+          <section>
+            <h2>Transfers</h2>
+            <TransferList branches={branches} version={version} onChanged={changed} />
           </section>
 
           <section>

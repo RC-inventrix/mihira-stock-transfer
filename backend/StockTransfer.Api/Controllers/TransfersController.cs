@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using StockTransfer.Api.Contracts;
 using StockTransfer.Api.Domain;
 using StockTransfer.Api.Services;
@@ -36,8 +37,16 @@ public class TransfersController(TransferService transfers) : ControllerBase
     [HttpPost("{id:int}/dispatch")]
     public Task<TransferDto> Dispatch(int id, CancellationToken ct) => transfers.DispatchAsync(id, ct);
 
+    /// <summary>
+    /// The body is optional: send <c>{ "lines": [{ "productId", "receivedQuantity" }] }</c> to record that less arrived than
+    /// was sent. Lines left out are received in full.
+    /// </summary>
     [HttpPost("{id:int}/receive")]
-    public Task<TransferDto> Receive(int id, CancellationToken ct) => transfers.ReceiveAsync(id, ct);
+    public Task<TransferDto> Receive(
+        int id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ReceiveTransferRequest? request,
+        CancellationToken ct) =>
+        transfers.ReceiveAsync(id, request, ct);
 
     [HttpPost("{id:int}/cancel")]
     public Task<TransferDto> Cancel(int id, CancellationToken ct) => transfers.CancelAsync(id, ct);

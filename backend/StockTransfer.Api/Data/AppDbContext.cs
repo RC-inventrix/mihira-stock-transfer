@@ -53,7 +53,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         model.Entity<TransferLine>(e =>
         {
-            e.ToTable(t => t.HasCheckConstraint("CK_TransferLine_Quantity_Positive", "\"Quantity\" > 0"));
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_TransferLine_Quantity_Positive", "\"Quantity\" > 0");
+                t.HasCheckConstraint(
+                    "CK_TransferLine_ReceivedQuantity_Range",
+                    "\"ReceivedQuantity\" IS NULL OR (\"ReceivedQuantity\" >= 0 AND \"ReceivedQuantity\" <= \"Quantity\")");
+            });
             // A product appears at most once per transfer.
             e.HasIndex(l => new { l.TransferId, l.ProductId }).IsUnique();
             e.HasOne(l => l.Product).WithMany().HasForeignKey(l => l.ProductId).OnDelete(DeleteBehavior.Restrict);

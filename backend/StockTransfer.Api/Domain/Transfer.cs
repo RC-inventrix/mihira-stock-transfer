@@ -39,7 +39,14 @@ public class TransferLine
     public int Id { get; set; }
     public int TransferId { get; set; }
     public int ProductId { get; set; }
+    /// <summary>The quantity sent. It leaves the sender on dispatch.</summary>
     public int Quantity { get; set; }
+
+    /// <summary>
+    /// What actually arrived, set on receive (null until then). It is between 0 and <see cref="Quantity"/>; the difference
+    /// is the record of what was lost or damaged in transit.
+    /// </summary>
+    public int? ReceivedQuantity { get; set; }
 
     public Product Product { get; set; } = null!;
 }

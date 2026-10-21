@@ -341,6 +341,9 @@ namespace StockTransfer.Api.Data.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("ReceivedQuantity")
+                        .HasColumnType("integer");
+
                     b.Property<int>("TransferId")
                         .HasColumnType("integer");
 
@@ -354,6 +357,8 @@ namespace StockTransfer.Api.Data.Migrations
                     b.ToTable("TransferLines", t =>
                         {
                             t.HasCheckConstraint("CK_TransferLine_Quantity_Positive", "\"Quantity\" > 0");
+
+                            t.HasCheckConstraint("CK_TransferLine_ReceivedQuantity_Range", "\"ReceivedQuantity\" IS NULL OR (\"ReceivedQuantity\" >= 0 AND \"ReceivedQuantity\" <= \"Quantity\")");
                         });
                 });
 

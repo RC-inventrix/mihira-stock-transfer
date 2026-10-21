@@ -31,7 +31,7 @@ public class TransferService(AppDbContext db)
         t.CancelledAt,
         t.Lines
             .OrderBy(l => l.ProductId)
-            .Select(l => new TransferLineDto(l.ProductId, l.Product.Sku, l.Product.Name, l.Quantity))
+            .Select(l => new TransferLineDto(l.ProductId, l.Product.Sku, l.Product.Name, l.Quantity, l.ReceivedQuantity))
             .ToList());
 
     /// <param name="branchId">Matches transfers sent from or to this branch.</param>
@@ -103,8 +103,15 @@ public class TransferService(AppDbContext db)
     public Task<TransferDto> DispatchAsync(int id, CancellationToken ct) =>
         MoveAsync(id, TransferStatus.Requested, TransferStatus.Dispatched, t => t.DispatchedAt, TakeFromSenderAsync, ct);
 
-    public Task<TransferDto> ReceiveAsync(int id, CancellationToken ct) =>
-        MoveAsync(id, TransferStatus.Dispatched, TransferStatus.Received, t => t.ReceivedAt, AddToReceiverAsync, ct);
+    /// <param name="request">Optional received quantities. Lines it leaves out, or all lines when it is null, are received in full.</param>
+    public Task<TransferDto> ReceiveAsync(int id, ReceiveTransferRequest? request, CancellationToken ct) =>
+        MoveAsync(
+            id,
+            TransferStatus.Dispatched,
+            TransferStatus.Received,
+            t => t.ReceivedAt,
+            (transfer, token) => AddToReceiverAsync(transfer, request, token),
+            ct);
 
     public Task<TransferDto> CancelAsync(int id, CancellationToken ct) =>
         MoveAsync(id, TransferStatus.Requested, TransferStatus.Cancelled, t => t.CancelledAt, moveStock: null, ct);
@@ -134,7 +141,7 @@ public class TransferService(AppDbContext db)
                 {
                     var transfer = await db.Transfers
                         .AsNoTracking()
-                        .Include(t => t.Lines)
+                        .Include(t => t.Lines).ThenInclude(l => l.Product)
                         .Include(t => t.FromBranch)
                         .SingleAsync(t => t.Id == id, ct);
                     await moveStock(transfer, ct);
@@ -198,13 +205,25 @@ public class TransferService(AppDbContext db)
             messages);
     }
 
-    private async Task AddToReceiverAsync(Transfer transfer, CancellationToken ct)
+    /// <summary>
+    /// Adds what arrived to the receiver's stock and records it on each line. The sender already lost the full quantity at
+    /// dispatch, so any shortfall stays on record as <c>Quantity - ReceivedQuantity</c>.
+    /// </summary>
+    private async Task AddToReceiverAsync(Transfer transfer, ReceiveTransferRequest? request, CancellationToken ct)
     {
+        var received = ValidateReceivedQuantities(transfer, request);
+
         foreach (var line in transfer.Lines.OrderBy(l => l.ProductId))
         {
+            var quantity = received.GetValueOrDefault(line.ProductId, line.Quantity);
+
+            await db.TransferLines
+                .Where(l => l.Id == line.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(l => l.ReceivedQuantity, quantity), ct);
+
             var added = await db.Stock
                 .Where(s => s.BranchId == transfer.ToBranchId && s.ProductId == line.ProductId)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Quantity, x => x.Quantity + line.Quantity), ct);
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Quantity, x => x.Quantity + quantity), ct);
 
             // Every branch/product pair is seeded with a stock row, so this only fails if that invariant is broken.
             if (added != 1)
@@ -213,6 +232,36 @@ public class TransferService(AppDbContext db)
                     $"No stock row for branch {transfer.ToBranchId}, product {line.ProductId}.");
             }
         }
+    }
+
+    /// <summary>Checks the received quantities against the transfer's lines and reports every problem at once.</summary>
+    /// <returns>Received quantity by product, for the lines the request mentions.</returns>
+    private static Dictionary<int, int> ValidateReceivedQuantities(Transfer transfer, ReceiveTransferRequest? request)
+    {
+        var lines = request?.Lines ?? [];
+        var sent = transfer.Lines.ToDictionary(l => l.ProductId);
+        var errors = new List<string>();
+
+        errors.AddRange(lines
+            .Where(l => !sent.ContainsKey(l.ProductId))
+            .Select(l => l.ProductId)
+            .Distinct()
+            .Select(id => $"Product {id} is not on transfer {transfer.Id}."));
+        errors.AddRange(lines
+            .GroupBy(l => l.ProductId)
+            .Where(g => g.Count() > 1 && sent.ContainsKey(g.Key))
+            .Select(g => $"{sent[g.Key].Product.Name} is listed more than once."));
+        errors.AddRange(lines
+            .Where(l => sent.ContainsKey(l.ProductId) && (l.ReceivedQuantity < 0 || l.ReceivedQuantity > sent[l.ProductId].Quantity))
+            .Select(l => $"The received quantity of {sent[l.ProductId].Product.Name} must be between 0 and the {sent[l.ProductId].Quantity} sent."));
+
+        if (errors.Count > 0)
+        {
+            // Thrown inside the receive transaction, so the status change is rolled back with it.
+            throw ApiException.Invalid(errors);
+        }
+
+        return lines.ToDictionary(l => l.ProductId, l => l.ReceivedQuantity);
     }
 
     private async Task<TransferDto?> FindByKeyAsync(string idempotencyKey, CancellationToken ct) =>

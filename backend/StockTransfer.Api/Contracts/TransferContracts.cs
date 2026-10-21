@@ -8,7 +8,13 @@ public record CreateTransferLineRequest(int ProductId, int Quantity);
 // rather than the framework's generic "field is required".
 public record CreateTransferRequest(int FromBranchId, int ToBranchId, List<CreateTransferLineRequest>? Lines);
 
-public record TransferLineDto(int ProductId, string Sku, string ProductName, int Quantity);
+public record ReceiveTransferLineRequest(int ProductId, int ReceivedQuantity);
+
+/// <summary>Optional body for receive. Lines left out (or no body at all) are received in full.</summary>
+public record ReceiveTransferRequest(List<ReceiveTransferLineRequest>? Lines);
+
+/// <param name="ReceivedQuantity">Null until the transfer is received. <c>Quantity - ReceivedQuantity</c> is the shortfall.</param>
+public record TransferLineDto(int ProductId, string Sku, string ProductName, int Quantity, int? ReceivedQuantity);
 
 public record TransferDto(
     int Id,

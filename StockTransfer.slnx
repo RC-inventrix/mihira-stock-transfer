@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/StockTransfer.Api/StockTransfer.Api.csproj" />
+    <Project Path="backend/StockTransfer.Tests/StockTransfer.Tests.csproj" />
+  </Folder>
+</Solution>

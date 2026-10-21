@@ -10,6 +10,19 @@ Prerequisites: .NET 10 SDK, Node.js 20+, and Docker (used for the database and f
 
 _TODO: run steps once the API and UI are in place._
 
+## Tests
+
+`dotnet test` from the repository root (Docker must be running). The tests host the real API in memory with `WebApplicationFactory` and run against a throwaway PostgreSQL 17 container (Testcontainers). The concurrency rules rely on PostgreSQL row locks, which an in-memory database would not show. Each test starts from the seeded stock.
+
+- **`TransferWorkflowTests`:** creating moves no stock. Dispatch takes stock from the sender only, and receive adds it to the receiver. An over-stock dispatch returns 409, lists each short line, and rolls back the lines it had already taken. Dispatching or receiving twice moves stock once. Every wrong-status action (for example, receive before dispatch, cancel after dispatch, dispatch after cancel) returns 409 and moves nothing.
+- **`ConcurrencyTests`:** 10 simultaneous dispatches, or receives, of one transfer move stock once. Three transfers competing for the same 3 units: exactly one is dispatched and stock ends at 1, never below zero. 10 simultaneous creates with one idempotency key make one transfer.
+- **`CreateTransferTests`:** each validation rule gives its own message and creates nothing. All problems are reported together. A repeated idempotency key returns the original transfer.
+
+To check that the tests can fail, I broke the code on purpose twice:
+
+- **Status guard removed** from the update: 9 tests failed.
+- **Status check rewritten as a naive "read the status, then write"** with a 20 ms gap: only the concurrency tests caught it, which is their job. Run on their own, the dispatch and receive tests failed in 3 out of 3 runs (Warehouse rice 400 instead of 490, Kandy 105 instead of 15). In one full-suite run, only the dispatch test caught it. A race test can only catch a race when the timing lines up, so these tests are evidence for the locking, not proof.
+
 ## Assumptions
 
 - **The warehouse is a location like any branch.** It can send and receive transfers. The brief lists it alongside the branches but gives it no special rules.

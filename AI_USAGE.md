@@ -1,5 +1,9 @@
 # AI Usage
 
+## How I used AI
+
+I first gave the business scenario to the AI and made a development plan based on it. I reviewed that plan, then completed the work phase by phase. I reviewed each phase when it was completed, and I also tested the system from the UI to make sure it behaved as expected.
+
 ## Tools used and what for
 
 - **Claude Code (Claude Opus 5.5)** in the terminal, across two sessions. The working log below has the details.
@@ -19,7 +23,12 @@ Other real cases from the log:
 
 ## What I wrote or decided myself
 
-_TODO: the candidate writes this section personally._
+The AI drafted the code and docs (see above). My part was to direct the work, review it and make the decisions:
+
+- **The plan:** I gave the AI the business scenario, reviewed the phased plan it produced and accepted its defaults: PostgreSQL rather than SQL Server, and a repeated dispatch or receive returns 200 with no effect rather than 409.
+- **Keeping the plan in the repo:** I asked for the plan to be saved as `PLAN.md` so it survives between sessions.
+- **Phase-by-phase review:** I reviewed each phase when it was completed, before moving on to the next.
+- **Testing from the UI:** I tested the system myself from the UI to make sure it behaved as expected.
 
 ---
 
